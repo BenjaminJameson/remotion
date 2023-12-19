@@ -19,7 +19,9 @@
 		"test": "vitest --run",
 		"build": "tsc -d",
 		"render": "remotion render react-svg",
-		"render-js": "remotion render src/entry.jsx framer",
+		"render-js": "remotion render src/entry.jsx framer --log=verbose",
+		"tester": "remotion render --log=verbose ten-frame-tester",
+		"benchmark": "remotion benchmark ten-frame-tester",
 		"render-gif": "remotion render framer out/video.gif --codec=gif --every-nth-frame=2",
 		"render-transparent": "remotion render --image-format=png --pixel-format=yuva420p --codec=vp8 react-svg out/video.webm"
 	},

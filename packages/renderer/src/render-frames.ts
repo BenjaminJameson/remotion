@@ -1,76 +1,76 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {performance} from 'perf_hooks';
-import type {TRenderAsset, VideoConfig} from 'remotion/no-react';
-import {NoReactInternals} from 'remotion/no-react';
-import type {RenderMediaOnDownload} from './assets/download-and-map-assets-to-file';
-import {downloadAndMapAssetsToFileUrl} from './assets/download-and-map-assets-to-file';
-import type {DownloadMap} from './assets/download-map';
-import {DEFAULT_BROWSER} from './browser';
-import type {BrowserExecutable} from './browser-executable';
-import type {BrowserLog} from './browser-log';
-import type {HeadlessBrowser} from './browser/Browser';
-import type {Page} from './browser/BrowserPage';
-import type {ConsoleMessage} from './browser/ConsoleMessage';
-import {isTargetClosedErr} from './browser/is-target-closed-err';
-import type {SourceMapGetter} from './browser/source-map-getter';
-import {DEFAULT_TIMEOUT} from './browser/TimeoutSettings';
-import type {Codec} from './codec';
-import type {Compositor} from './compositor/compositor';
-import {compressAsset} from './compress-assets';
-import {cycleBrowserTabs} from './cycle-browser-tabs';
-import {handleJavascriptException} from './error-handling/handle-javascript-exception';
-import {findRemotionRoot} from './find-closest-package-json';
-import type {FrameRange} from './frame-range';
-import {getActualConcurrency} from './get-concurrency';
-import {getFramesToRender} from './get-duration-from-frame-range';
-import type {CountType} from './get-frame-padded-index';
+import { performance } from 'perf_hooks';
+import type { TRenderAsset, VideoConfig } from 'remotion/no-react';
+import { NoReactInternals } from 'remotion/no-react';
+import type { RenderMediaOnDownload } from './assets/download-and-map-assets-to-file';
+import { downloadAndMapAssetsToFileUrl } from './assets/download-and-map-assets-to-file';
+import type { DownloadMap } from './assets/download-map';
+import { DEFAULT_BROWSER } from './browser';
+import type { BrowserExecutable } from './browser-executable';
+import type { BrowserLog } from './browser-log';
+import type { HeadlessBrowser } from './browser/Browser';
+import type { Page } from './browser/BrowserPage';
+import type { ConsoleMessage } from './browser/ConsoleMessage';
+import { isTargetClosedErr } from './browser/is-target-closed-err';
+import type { SourceMapGetter } from './browser/source-map-getter';
+import { DEFAULT_TIMEOUT } from './browser/TimeoutSettings';
+import type { Codec } from './codec';
+import type { Compositor } from './compositor/compositor';
+import { compressAsset } from './compress-assets';
+import { cycleBrowserTabs } from './cycle-browser-tabs';
+import { handleJavascriptException } from './error-handling/handle-javascript-exception';
+import { findRemotionRoot } from './find-closest-package-json';
+import type { FrameRange } from './frame-range';
+import { getActualConcurrency } from './get-concurrency';
+import { getFramesToRender } from './get-duration-from-frame-range';
+import type { CountType } from './get-frame-padded-index';
 import {
 	getFilePadLength,
 	getFrameOutputFileName,
 } from './get-frame-padded-index';
-import {getRealFrameRange} from './get-frame-to-render';
-import type {VideoImageFormat} from './image-format';
-import {DEFAULT_JPEG_QUALITY, validateJpegQuality} from './jpeg-quality';
-import {type LogLevel} from './log-level';
-import {getLogLevel, Log} from './logger';
-import type {CancelSignal} from './make-cancel-signal';
-import {cancelErrorMessages, isUserCancelledRender} from './make-cancel-signal';
-import type {ChromiumOptions} from './open-browser';
-import {internalOpenBrowser} from './open-browser';
-import type {ToOptions} from './options/option';
-import type {optionsMap} from './options/options-map';
-import {startPerfMeasure, stopPerfMeasure} from './perf';
-import {Pool} from './pool';
-import type {RemotionServer} from './prepare-server';
-import {makeOrReuseServer} from './prepare-server';
-import {puppeteerEvaluateWithCatch} from './puppeteer-evaluate';
-import type {BrowserReplacer} from './replace-browser';
-import {handleBrowserCrash} from './replace-browser';
-import {seekToFrame} from './seek-to-frame';
-import {setPropsAndEnv} from './set-props-and-env';
-import {takeFrameAndCompose} from './take-frame-and-compose';
-import {truthy} from './truthy';
-import type {OnStartData, RenderFramesOutput} from './types';
+import { getRealFrameRange } from './get-frame-to-render';
+import type { VideoImageFormat } from './image-format';
+import { DEFAULT_JPEG_QUALITY, validateJpegQuality } from './jpeg-quality';
+import { type LogLevel } from './log-level';
+import { getLogLevel, Log } from './logger';
+import type { CancelSignal } from './make-cancel-signal';
+import { cancelErrorMessages, isUserCancelledRender } from './make-cancel-signal';
+import type { ChromiumOptions } from './open-browser';
+import { internalOpenBrowser } from './open-browser';
+import type { ToOptions } from './options/option';
+import type { optionsMap } from './options/options-map';
+import { startPerfMeasure, stopPerfMeasure } from './perf';
+import { Pool } from './pool';
+import type { RemotionServer } from './prepare-server';
+import { makeOrReuseServer } from './prepare-server';
+import { puppeteerEvaluateWithCatch } from './puppeteer-evaluate';
+import type { BrowserReplacer } from './replace-browser';
+import { handleBrowserCrash } from './replace-browser';
+import { seekToFrame } from './seek-to-frame';
+import { setPropsAndEnv } from './set-props-and-env';
+import { takeFrameAndCompose } from './take-frame-and-compose';
+import { truthy } from './truthy';
+import type { OnStartData, RenderFramesOutput } from './types';
 import {
 	validateDimension,
 	validateDurationInFrames,
 	validateFps,
 } from './validate';
-import {validateScale} from './validate-scale';
-import {wrapWithErrorHandling} from './wrap-with-error-handling';
+import { validateScale } from './validate-scale';
+import { wrapWithErrorHandling } from './wrap-with-error-handling';
 
 const MAX_RETRIES_PER_FRAME = 1;
 
 export type InternalRenderFramesOptions = {
 	onStart: null | ((data: OnStartData) => void);
 	onFrameUpdate:
-		| null
-		| ((
-				framesRendered: number,
-				frameIndex: number,
-				timeToRenderInMilliseconds: number,
-		  ) => void);
+	| null
+	| ((
+		framesRendered: number,
+		frameIndex: number,
+		timeToRenderInMilliseconds: number,
+	) => void);
 	outputDir: string | null;
 	envVariables: Record<string, string>;
 	imageFormat: VideoImageFormat;
@@ -102,12 +102,12 @@ export type InternalRenderFramesOptions = {
 type InnerRenderFramesOptions = {
 	onStart: null | ((data: OnStartData) => void);
 	onFrameUpdate:
-		| null
-		| ((
-				framesRendered: number,
-				frameIndex: number,
-				timeToRenderInMilliseconds: number,
-		  ) => void);
+	| null
+	| ((
+		framesRendered: number,
+		frameIndex: number,
+		timeToRenderInMilliseconds: number,
+	) => void);
 	outputDir: string | null;
 	envVariables: Record<string, string>;
 	imageFormat: VideoImageFormat;
@@ -234,7 +234,9 @@ const innerRenderFrames = async ({
 	const framesToRender = getFramesToRender(realFrameRange, everyNthFrame);
 	const lastFrame = framesToRender[framesToRender.length - 1];
 
-	const makePage = async (context: SourceMapGetter) => {
+	const makePage = async (context: SourceMapGetter, index: number) => {
+
+		console.time(`makePage: ${index}`);
 		const page = await browserReplacer
 			.getBrowser()
 			.newPage(context, logLevel, indent);
@@ -311,6 +313,7 @@ const innerRenderFrames = async ({
 		});
 
 		page.off('console', logCallback);
+		console.timeEnd(`makePage: ${index}`);
 
 		return page;
 	};
@@ -318,7 +321,7 @@ const innerRenderFrames = async ({
 	const getPool = async (context: SourceMapGetter) => {
 		const pages = new Array(actualConcurrency)
 			.fill(true)
-			.map(() => makePage(context));
+			.map((_e, index) => makePage(context, index));
 		const puppeteerPages = await Promise.all(pages);
 		const pool = new Pool(puppeteerPages);
 		return pool;
@@ -400,7 +403,7 @@ const innerRenderFrames = async ({
 		const timeToSeek = Date.now() - startSeeking;
 		if (timeToSeek > 1000) {
 			Log.verbose(
-				{indent, logLevel},
+				{ indent, logLevel },
 				`Seeking to frame ${frame} took ${timeToSeek}ms`,
 			);
 		}
@@ -421,7 +424,7 @@ const innerRenderFrames = async ({
 
 		const frameDir = outputDir ?? downloadMap.compositingDir;
 
-		const {buffer, collectedAssets} = await takeFrameAndCompose({
+		const { buffer, collectedAssets } = await takeFrameAndCompose({
 			frame,
 			freePage,
 			height,
@@ -544,7 +547,7 @@ const innerRenderFrames = async ({
 			await browserReplacer.replaceBrowser(makeBrowser, async () => {
 				const pages = new Array(actualConcurrency)
 					.fill(true)
-					.map(() => makePage(sourceMapGetter));
+					.map(() => makePage(sourceMapGetter, 200000));
 				const puppeteerPages = await Promise.all(pages);
 				const pool = await poolPromise;
 				for (const newPage of puppeteerPages) {
@@ -694,8 +697,8 @@ const internalRenderFramesRaw = ({
 					},
 				),
 				browserInstance,
-			]).then(([{server: openedServer, cleanupServer}, pInstance]) => {
-				const {serveUrl, offthreadPort, compositor, sourceMap, downloadMap} =
+			]).then(([{ server: openedServer, cleanupServer }, pInstance]) => {
+				const { serveUrl, offthreadPort, compositor, sourceMap, downloadMap } =
 					openedServer;
 
 				const browserReplacer = handleBrowserCrash(pInstance, logLevel, indent);
